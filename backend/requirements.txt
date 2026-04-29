@@ -22,4 +22,4 @@ requests==2.31.0
 
 # Supplier APIs
 requests==2.31.0
-paypalcheckoutsdk==1.0.3
+paypal-checkout-sdk==1.2.2
