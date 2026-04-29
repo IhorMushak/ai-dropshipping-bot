@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  medusa-server:
+    image: medusajs/medusa:latest
+    container_name: medusa-server
+    ports:
+      - "9000:9000"
+    environment:
+      - DATABASE_URL=postgresql://medusa:medusa@medusa-db:5432/medusa
+      - REDIS_URL=redis://medusa-redis:6379
+      - COOKIE_SECRET=medusa-secret-key
+      - JWT_SECRET=medusa-jwt-secret
+    depends_on:
+      - medusa-db
+      - medusa-redis
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - medusa-network
+
+  medusa-db:
+    image: postgres:15-alpine
+    container_name: medusa-db
+    environment:
+      - POSTGRES_USER=medusa
+      - POSTGRES_PASSWORD=medusa
+      - POSTGRES_DB=medusa
+    ports:
+      - "5433:5432"
+    volumes:
+      - medusa-postgres:/var/lib/postgresql/data
+    networks:
+      - medusa-network
+
+  medusa-redis:
+    image: redis:7-alpine
+    container_name: medusa-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - medusa-redis:/data
+    networks:
+      - medusa-network
+
+networks:
+  medusa-network:
+    driver: bridge
+
+volumes:
+  medusa-postgres:
+  medusa-redis:

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dropshipping Bot Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-blue-400 mb-2">🤖 AI Dropshipping Bot</h1>
+        <p class="text-gray-400 mb-6">Autonomous Dropshipping Automation Platform</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" id="metrics">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="text-gray-400 text-sm">Total Orders</div>
+                <div class="text-3xl font-bold text-white" id="totalOrders">-</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="text-gray-400 text-sm">Revenue</div>
+                <div class="text-3xl font-bold text-green-400" id="revenue">-</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="text-gray-400 text-sm">Profit</div>
+                <div class="text-3xl font-bold text-blue-400" id="profit">-</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="text-gray-400 text-sm">Active Products</div>
+                <div class="text-3xl font-bold text-purple-400" id="activeProducts">-</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h2 class="text-xl font-semibold">📦 Products</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-700">
+                            <tr><th class="px-6 py-3 text-left text-xs">Name</th><th class="px-6 py-3 text-left text-xs">Score</th><th class="px-6 py-3 text-left text-xs">Price</th><th class="px-6 py-3 text-left text-xs">Status</th></tr>
+                        </thead>
+                        <tbody id="productsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h2 class="text-xl font-semibold">🛒 Orders</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-700"><tr><th class="px-6 py-3 text-left text-xs">Order #</th><th class="px-6 py-3 text-left text-xs">Amount</th><th class="px-6 py-3 text-left text-xs">Status</th></tr></thead>
+                        <tbody id="ordersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="loadData()" class="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">🔄 Refresh</button>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+
+        async function loadData() {
+            try {
+                const metricsRes = await fetch(`${API_URL}/dashboard/metrics`);
+                const metrics = await metricsRes.json();
+                document.getElementById('totalOrders').textContent = metrics.total_orders || 0;
+                document.getElementById('revenue').textContent = `$${(metrics.revenue || 0).toFixed(2)}`;
+                document.getElementById('profit').textContent = `$${(metrics.profit || 0).toFixed(2)}`;
+
+                const productsRes = await fetch(`${API_URL}/products/`);
+                const products = await productsRes.json();
+                document.getElementById('activeProducts').textContent = products.filter(p => p.status === 'active' || p.status === 'published').length;
+                document.getElementById('productsTable').innerHTML = products.slice(0, 10).map(p => `<tr class="hover:bg-gray-700"><td class="px-6 py-4 text-sm">${p.name.substring(0, 40)}...</td><td class="px-6 py-4 text-sm"><span class="px-2 py-1 rounded text-xs ${p.final_score >= 80 ? 'bg-green-600' : 'bg-gray-600'}">${p.final_score || 'N/A'}</span></td><td class="px-6 py-4 text-sm">$${(p.selling_price || 0).toFixed(2)}</td><td class="px-6 py-4 text-sm"><span class="px-2 py-1 rounded text-xs bg-blue-600">${p.status}</span></td></tr>`).join('') || '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">No products</td></tr>';
+
+                const ordersRes = await fetch(`${API_URL}/orders/`);
+                const orders = await ordersRes.json();
+                document.getElementById('ordersTable').innerHTML = orders.slice(0, 10).map(o => `<tr class="hover:bg-gray-700"><td class="px-6 py-4 text-sm font-mono">${o.order_number}</td><td class="px-6 py-4 text-sm text-green-400">$${(o.total_amount || 0).toFixed(2)}</td><td class="px-6 py-4 text-sm"><span class="px-2 py-1 rounded text-xs ${o.status === 'delivered' ? 'bg-green-600' : 'bg-yellow-600'}">${o.status}</span></td></tr>`).join('') || '<tr><td colspan="3" class="px-6 py-4 text-center text-gray-400">No orders</td></tr>';
+            } catch(e) { console.error(e); }
+        }
+        loadData();
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
