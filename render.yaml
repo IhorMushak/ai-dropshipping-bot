@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: ai-dropshipping-backend
+    runtime: image
+    repo: https://github.com/IhorMushak/ai-dropshipping-bot
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_ENVIRONMENT
+        value: sandbox
+      - key: ALIEXPRESS_API_KEY
+        sync: false
