@@ -69,3 +69,36 @@ async def update_product_images(
     updater = ImageUpdater()
     updated = updater.update_all_missing_images(db, limit)
     return {"updated": updated, "message": f"Updated {updated} products with images"}
+
+
+@router.post("/products/update-images")
+async def update_product_images(
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """Оновити зображення для всіх продуктів без фото"""
+    from app.modules.supplier.dual import DualSupplier
+    supplier = DualSupplier()
+    
+    products = db.query(Product).filter(
+        Product.images == None
+    ).limit(limit).all()
+    
+    updated = 0
+    for product in products:
+        keyword = product.name.split('-')[0].strip()
+        results = supplier.search_all(keyword, limit=1)
+        
+        if results.get('aliexpress') and results['aliexpress']:
+            image_url = results['aliexpress'][0].get('image_url')
+            if image_url:
+                product.images = [image_url]
+                updated += 1
+                db.commit()
+                logger.info(f"Updated image for: {product.name}")
+    
+    return {
+        "updated": updated,
+        "total_checked": len(products),
+        "message": f"Updated {updated} products with images"
+    }
