@@ -225,3 +225,9 @@ class TrendScanner:
             }
         finally:
             db.close()
+
+    def _add_image_to_product(self, product: Product, db: Session):
+        """Додає зображення до продукту при створенні"""
+        from app.modules.supplier.image_updater import ImageUpdater
+        updater = ImageUpdater()
+        updater.auto_update_on_product_creation(db, product)
