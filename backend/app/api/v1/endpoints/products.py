@@ -58,3 +58,14 @@ async def update_product_images(
     updater = ImageUpdater()
     updated = updater.update_all_missing_images(db, limit)
     return {"updated": updated, "message": f"Updated {updated} products with images"}
+
+@router.post("/products/update-images")
+async def update_product_images(
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    """Оновити зображення для продуктів без фото"""
+    from app.modules.supplier.image_updater import ImageUpdater
+    updater = ImageUpdater()
+    updated = updater.update_all_missing_images(db, limit)
+    return {"updated": updated, "message": f"Updated {updated} products with images"}
