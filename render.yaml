@@ -1,7 +1,7 @@
 services:
   - type: web
     name: ai-dropshipping-backend
-    runtime: image
+    runtime: docker
     repo: https://github.com/IhorMushak/ai-dropshipping-bot
     plan: free
     dockerfilePath: ./Dockerfile.railway
