@@ -4,7 +4,8 @@ services:
     runtime: image
     repo: https://github.com/IhorMushak/ai-dropshipping-bot
     plan: free
-    dockerfilePath: ./backend/Dockerfile
+    dockerfilePath: ./Dockerfile.railway
+    healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
         value: production
@@ -12,11 +13,28 @@ services:
         value: "false"
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-dropshipping-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: ai-dropshipping-redis
+          type: redis
+          property: connectionString
+      - key: ALIEXPRESS_API_KEY
+        sync: false
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_CLIENT_SECRET
         sync: false
       - key: PAYPAL_ENVIRONMENT
         value: sandbox
-      - key: ALIEXPRESS_API_KEY
-        sync: false
+
+  - type: redis
+    name: ai-dropshipping-redis
+    plan: free
+
+  - type: pgsql
+    name: ai-dropshipping-db
+    plan: free
