@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head><title>AI Dropshipping Bot</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-gray-900 text-white p-6">
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold mb-4">🤖 AI Dropshipping Bot</h1>
+    <div class="grid grid-cols-4 gap-4 mb-6" id="stats"></div>
+    
+    <div class="bg-gray-800 p-4 rounded mb-6">
+        <h2 class="text-xl mb-2">📝 SEO Publisher</h2>
+        <select id="productSelect" class="bg-gray-700 p-2 rounded mr-2"><option>Loading...</option></select>
+        <button onclick="generateSEO()" class="bg-purple-600 px-4 py-2 rounded">Generate Article & Pin</button>
+        <div id="seoResult" class="mt-4 hidden"></div>
+    </div>
+    
+    <div class="bg-gray-800 p-4 rounded"><h2 class="text-xl mb-2">📦 Products</h2><div id="products"></div></div>
+</div>
+<script>
+const API = 'https://ai-dropshipping-backend.onrender.com/api/v1';
+async function fetchAPI(endpoint){ let r=await fetch(API+endpoint); return r.json(); }
+async function loadProducts(){
+    let products = await fetchAPI('/products/');
+    let select = document.getElementById('productSelect');
+    select.innerHTML = products.map(p=>`<option value="${p.id}">${p.name.substring(0,50)} (Score: ${p.final_score||0})</option>`).join('');
+    document.getElementById('products').innerHTML = products.map(p=>`<div class="border-b border-gray-700 py-2">${p.name} - $${p.selling_price} - ${p.status}</div>`).join('');
+    let stats = await fetchAPI('/dashboard/metrics');
+    document.getElementById('stats').innerHTML = `<div class="bg-gray-800 p-4 rounded">Orders: ${stats.total_orders}</div><div class="bg-gray-800 p-4 rounded">Revenue: $${stats.revenue}</div><div class="bg-gray-800 p-4 rounded">Profit: $${stats.profit}</div><div class="bg-gray-800 p-4 rounded">Active: ${stats.active_products}</div>`;
+}
+window.generateSEO = async function(){
+    let id = document.getElementById('productSelect').value;
+    if(!id) return alert('Select product');
+    let res = await fetchAPI(`/seo/generate/${id}`);
+    let html = `<div class="bg-gray-900 p-3 rounded mb-2"><b>Medium Article:</b><br>${res.medium_article.content.substring(0,300)}...</div>
+                <div class="bg-gray-900 p-3 rounded"><b>Pinterest Pin:</b><br><b>Title:</b> ${res.pinterest_pin.title}<br><b>Description:</b> ${res.pinterest_pin.description}</div>`;
+    document.getElementById('seoResult').innerHTML = html;
+    document.getElementById('seoResult').classList.remove('hidden');
+};
+loadProducts();
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publisher Control - AI Dropshipping Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f0f0f; font-family: 'Inter', sans-serif; }
+        .card { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+        .btn { transition: all 0.2s ease; cursor: pointer; }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge-green { background: rgba(34,197,94,0.2); color: #4ade80; }
+        .badge-blue { background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .badge-purple { background: rgba(168,85,247,0.2); color: #a855f7; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #1a1a2e; border-radius: 24px; max-width: 500px; width: 90%; border: 1px solid rgba(59,130,246,0.3); }
+    </style>
+</head>
+<body class="text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">📤 Publisher Control</h1>
+                <p class="text-gray-400 text-sm">Generate landing pages for your products</p>
+            </div>
+            <a href="dashboard.html" class="btn bg-gray-800 hover:bg-gray-700 px-5 py-2 rounded-xl text-sm">← Back to Dashboard</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+            <div class="card p-5"><div class="text-gray-400 text-sm">Total Products</div><div class="text-3xl font-bold mt-1" id="totalProducts">0</div></div>
+            <div class="card p-5"><div class="text-gray-400 text-sm">Published</div><div class="text-3xl font-bold text-green-400 mt-1" id="publishedCount">0</div></div>
+            <div class="card p-5"><div class="text-gray-400 text-sm">Landing Pages</div><div class="text-3xl font-bold text-purple-400 mt-1" id="landingCount">0</div></div>
+        </div>
+
+        <div class="card mb-8">
+            <div class="p-5 border-b border-white/5 flex justify-between items-center">
+                <h2 class="text-xl font-semibold">Products</h2>
+                <button onclick="openPublishModal()" class="btn bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-sm">+ Generate Landing</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-800"><tr><th class="px-6 py-3 text-left text-xs">Product</th><th class="px-6 py-3 text-left text-xs">Score</th><th class="px-6 py-3 text-left text-xs">Price</th><th class="px-6 py-3 text-left text-xs">Landing Page</th><th class="px-6 py-3 text-left text-xs">Actions</th></tr></thead>
+                    <tbody id="productsTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="p-5 border-b border-white/5"><h2 class="text-xl font-semibold">🌐 Published Landing Pages</h2></div>
+            <div id="landingUrls" class="divide-y divide-gray-800"></div>
+        </div>
+    </div>
+
+    <div id="publishModal" class="modal hidden" onclick="if(event.target===this) closePublishModal()">
+        <div class="modal-content p-6">
+            <h3 class="text-xl font-semibold mb-4">Generate Landing Page</h3>
+            <select id="productSelect" class="w-full bg-gray-700 rounded-lg px-3 py-2 mb-4 border border-gray-600">
+                <option value="">Select product...</option>
+            </select>
+            <button onclick="generateLanding()" class="w-full btn bg-blue-600 hover:bg-blue-500 py-2 rounded-lg">Generate</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-5 py-3 rounded-xl shadow-xl hidden"></div>
+
+    <script>
+        const API = 'https://ai-dropshipping-backend.onrender.com/api/v1';
+        
+        function toast(msg, err=false){ let t=document.getElementById('toast'); t.textContent=msg; t.className=`fixed bottom-5 right-5 px-5 py-3 rounded-xl shadow-xl ${err?'bg-red-600':'bg-green-600'}`; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000); }
+        
+        async function api(endpoint, opts={}){ try{ let res=await fetch(`${API}${endpoint}`,{method:opts.method||'GET'}); if(!res.ok)throw new Error(); return await res.json(); }catch(e){ return null; }}
+        
+        function copyToClipboard(text){ navigator.clipboard.writeText(text); toast('📋 URL copied!'); }
+        
+        async function generateLandingForProduct(productId){
+            let result = await api(`/landing/generate/${productId}`, {method:'POST'});
+            if(result?.success){ toast(`✅ ${result.page_url}`); copyToClipboard(result.page_url); loadData(); }
+        }
+        
+        async function generateLanding(){
+            let id = document.getElementById('productSelect').value;
+            if(!id){ toast('Select product', true); return; }
+            await generateLandingForProduct(id);
+            closePublishModal();
+        }
+        
+        async function loadData(){
+            let products = await api('/products/');
+            if(!products) return;
+            
+            document.getElementById('totalProducts').innerText = products.length;
+            document.getElementById('publishedCount').innerText = products.filter(p => p.status === 'published' || p.status === 'active').length;
+            document.getElementById('landingCount').innerText = products.filter(p => p.shopify_handle).length;
+            
+            let select = document.getElementById('productSelect');
+            select.innerHTML = '<option value="">Select product...</option>' + products.filter(p => !p.shopify_handle).slice(0,30).map(p => `<option value="${p.id}">${p.name.substring(0,60)} (Score: ${p.final_score||p.trend_score||0})</option>`).join('');
+            
+            let tableHtml = '';
+            for(let p of products.slice(0,30)){
+                let score = p.final_score || p.trend_score || 0;
+                let scoreColor = score >= 80 ? 'badge-green' : (score >= 60 ? 'badge-blue' : 'badge-purple');
+                let landingUrl = p.shopify_handle ? `https://ai-dropshipping-backend.onrender.com/static/landings/${p.shopify_handle}.html` : '';
+                tableHtml += `<tr class="border-b border-gray-800">
+                    <td class="px-6 py-4 text-sm">${p.name.substring(0,50)}${p.name.length>50?'...':''}</td>
+                    <td class="px-6 py-4"><span class="badge ${scoreColor}">${score || 'N/A'}</span></td>
+                    <td class="px-6 py-4 text-green-400">$${(p.selling_price || 0).toFixed(2)}</td>
+                    <td class="px-6 py-4">${landingUrl ? `<a href="${landingUrl}" target="_blank" class="text-blue-400 hover:underline">🔗 Open</a>` : '-'}</td>
+                    <td class="px-6 py-4"><button onclick="generateLandingForProduct('${p.id}')" class="bg-purple-600/30 hover:bg-purple-600/50 px-3 py-1 rounded text-xs">Generate Landing</button></td>
+                </tr>`;
+            }
+            document.getElementById('productsTable').innerHTML = tableHtml || '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">No products</td></tr>';
+            
+            let urlsHtml = '';
+            for(let p of products.filter(p => p.shopify_handle).slice(0,15)){
+                let url = `https://ai-dropshipping-backend.onrender.com/static/landings/${p.shopify_handle}.html`;
+                urlsHtml += `<div class="p-3 flex justify-between items-center hover:bg-gray-800">
+                    <div><div class="text-sm">${p.name.substring(0,40)}...</div><div class="text-xs text-gray-400">${p.shopify_handle}</div></div>
+                    <div class="flex gap-2">
+                        <a href="${url}" target="_blank" class="text-blue-400 text-sm hover:underline">Open</a>
+                        <button onclick="copyToClipboard('${url}')" class="text-gray-400 text-sm hover:text-white">Copy</button>
+                    </div>
+                </div>`;
+            }
+            document.getElementById('landingUrls').innerHTML = urlsHtml || '<div class="p-5 text-center text-gray-400">No landing pages yet</div>';
+        }
+        
+        function openPublishModal(){ loadData(); document.getElementById('publishModal').classList.remove('hidden'); }
+        function closePublishModal(){ document.getElementById('publishModal').classList.add('hidden'); }
+        
+        loadData();
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
