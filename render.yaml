@@ -35,6 +35,6 @@ services:
     name: ai-dropshipping-redis
     plan: free
 
-  - type: pgsql
+  - type: postgres
     name: ai-dropshipping-db
     plan: free
