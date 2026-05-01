@@ -13,15 +13,6 @@ services:
         value: "false"
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: ai-dropshipping-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: ai-dropshipping-redis
-          type: redis
-          property: connectionString
       - key: ALIEXPRESS_API_KEY
         sync: false
       - key: PAYPAL_CLIENT_ID
@@ -30,11 +21,7 @@ services:
         sync: false
       - key: PAYPAL_ENVIRONMENT
         value: sandbox
-
-  - type: redis
-    name: ai-dropshipping-redis
-    plan: free
-
-  - type: postgres
-    name: ai-dropshipping-db
-    plan: free
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
