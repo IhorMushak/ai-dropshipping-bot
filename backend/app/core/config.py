@@ -45,8 +45,13 @@ class Settings:
     INFLUENCEFLOW_API_KEY: str = os.getenv("INFLUENCEFLOW_API_KEY", "")
     INFLUENCEFLOW_API_URL: str = os.getenv("INFLUENCEFLOW_API_URL", "https://api.influenceflow.com/v1")
     
-    # CORS
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8000"]
+    # CORS - дозволяємо GitHub Pages та локальну розробку
+    CORS_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://ihormushak.github.io",
+        "https://ai-dropshipping-bot.pages.dev",
+    ]
 
 
 settings = Settings()
