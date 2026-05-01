@@ -26,3 +26,7 @@ from app.api.v1.endpoints import payment
 api_router.include_router(payment.router, prefix="", tags=["payment"])
 from app.api.v1.endpoints import seo
 api_router.include_router(seo.router, prefix="", tags=["seo"])
+from app.api.v1.endpoints import influence
+api_router.include_router(influence.router, prefix="", tags=["influence"])
+from app.api.v1.endpoints import seo
+api_router.include_router(seo.router, prefix="", tags=["seo"])

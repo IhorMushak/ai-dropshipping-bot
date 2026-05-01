@@ -14,10 +14,9 @@ creator = CampaignCreator()
 @router.post("/ads/create/{product_id}")
 async def create_campaign(
     product_id: str,
-    platform: str = Query("meta", regex="^(meta|facebook|tiktok|google)$"),
+    platform: str = Query("meta", regex="^(meta|facebook|tiktok|google|influenceflow)$"),
     db: Session = Depends(get_db)
 ):
-    """Створити рекламну кампанію для продукту"""
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -28,12 +27,11 @@ async def create_campaign(
 
 @router.post("/ads/create-batch")
 async def create_batch_campaigns(
-    platform: str = Query("meta", regex="^(meta|facebook|tiktok|google)$"),
+    platform: str = Query("meta", regex="^(meta|facebook|tiktok|google|influenceflow)$"),
     limit: int = Query(5, ge=1, le=20),
     min_score: float = Query(70, ge=0, le=100),
     db: Session = Depends(get_db)
 ):
-    """Створити кампанії для топ продуктів"""
     products = db.query(Product).filter(
         Product.status == "published",
         Product.final_score >= min_score
@@ -57,7 +55,6 @@ async def get_campaigns(
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """Отримати всі рекламні кампанії"""
     campaigns = db.query(Campaign).offset(skip).limit(limit).all()
     return {
         "total": db.query(Campaign).count(),

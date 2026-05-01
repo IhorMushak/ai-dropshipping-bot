@@ -15,6 +15,7 @@ services:
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
       - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
       - PAYPAL_ENVIRONMENT=${PAYPAL_ENVIRONMENT}
+      - OLLAMA_HOST=http://ollama:11434
     env_file:
       - .env
     volumes:
@@ -24,6 +25,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      ollama:
+        condition: service_started
     networks:
       - dropshipping-network
     restart: unless-stopped
@@ -64,6 +67,15 @@ services:
       - dropshipping-network
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - dropshipping-network
+    restart: unless-stopped
+
 networks:
   dropshipping-network:
     driver: bridge
@@ -71,3 +83,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  ollama_data:

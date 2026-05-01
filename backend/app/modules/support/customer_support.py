@@ -1,23 +1,23 @@
 """
-Customer Support AI - автоматична відповідь клієнтам через Ollama
+Customer Support AI - використовує Ollama для відповідей
 """
 import logging
 import requests
-from decimal import Decimal
-from datetime import datetime
+import json
 from typing import Dict, Optional
+from datetime import datetime
 from sqlalchemy.orm import Session
-from app.database.models import Order, Customer
+from app.database.models import Order
 
 logger = logging.getLogger(__name__)
 
 
 class CustomerSupport:
-    """AI агент для підтримки клієнтів"""
+    """AI агент для підтримки клієнтів через Ollama"""
     
-    def __init__(self, ollama_url: str = "http://host.docker.internal:11434", model: str = "llama3"):
-        self.ollama_url = ollama_url
-        self.model = model
+    def __init__(self):
+        self.ollama_url = "http://ollama:11434"
+        self.model = "llama3"
     
     def get_order_info(self, order_number: str, db: Session) -> Optional[Dict]:
         """Отримати інформацію про замовлення"""
@@ -38,37 +38,42 @@ class CustomerSupport:
     
     def generate_response(self, user_message: str, context: str = None) -> str:
         """Генерує відповідь через Ollama"""
-        prompt = f"""You are a customer support agent for an online dropshipping store called "AI Dropshipping Bot".
-Be helpful, friendly, and professional.
-
-Customer question: {user_message}
-
-{context if context else ""}
-
-Respond in a helpful manner. Keep response short and clear (max 100 words)."""
+        
+        system_prompt = """You are a professional customer support agent for an online dropshipping store called "AI Dropshipping Bot".
+Be helpful, friendly, and professional. Keep responses short and clear (max 150 words).
+If you don't know something, be honest and say you'll check."""
+        
+        user_prompt = f"Customer: {user_message}\n\n"
+        if context:
+            user_prompt += f"Order context: {context}\n\n"
+        user_prompt += "Your response:"
         
         try:
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json={
                     "model": self.model,
-                    "prompt": prompt,
+                    "prompt": user_prompt,
+                    "system": system_prompt,
                     "stream": False,
-                    "options": {"temperature": 0.7, "max_tokens": 200}
+                    "options": {"temperature": 0.7, "max_tokens": 300}
                 },
                 timeout=30
             )
             
             if response.status_code == 200:
-                return response.json().get('response', self._fallback_response())
+                result = response.json().get('response', '')
+                return result.strip()
             else:
+                logger.error(f"Ollama error: {response.status_code}")
                 return self._fallback_response()
+                
         except Exception as e:
             logger.error(f"Ollama error: {e}")
             return self._fallback_response()
     
     def _fallback_response(self) -> str:
-        """Запасна відповідь якщо Ollama не доступна"""
+        """Запасна відповідь"""
         return "Thank you for contacting us! Please provide your order number and we'll check the status for you."
     
     def handle_inquiry(self, user_message: str, order_number: str = None, db: Session = None) -> Dict:
@@ -79,14 +84,13 @@ Respond in a helpful manner. Keep response short and clear (max 100 words)."""
         if order_number and db:
             order_info = self.get_order_info(order_number, db)
             if order_info:
-                context = f"\nOrder information:\n"
-                context += f"- Status: {order_info['status']}\n"
+                context = f"Order #{order_number}: status={order_info['status']}"
                 if order_info['tracking_number']:
-                    context += f"- Tracking: {order_info['tracking_number']} ({order_info['carrier']})\n"
+                    context += f", tracking={order_info['tracking_number']}"
                 if order_info['delivered_at']:
-                    context += f"- Delivered on: {order_info['delivered_at']}\n"
+                    context += f", delivered on {order_info['delivered_at']}"
                 elif order_info['shipped_at']:
-                    context += f"- Shipped on: {order_info['shipped_at']}\n"
+                    context += f", shipped on {order_info['shipped_at']}"
         
         response = self.generate_response(user_message, context)
         inquiry_type = self._detect_inquiry_type(user_message)
@@ -96,7 +100,8 @@ Respond in a helpful manner. Keep response short and clear (max 100 words)."""
             "response": response,
             "inquiry_type": inquiry_type,
             "order_number": order_number,
-            "context_used": bool(context)
+            "context_used": bool(context),
+            "model": self.model
         }
     
     def _detect_inquiry_type(self, message: str) -> str:
@@ -109,25 +114,26 @@ Respond in a helpful manner. Keep response short and clear (max 100 words)."""
             return "return_refund"
         elif "product" in message_lower or "quality" in message_lower:
             return "product_inquiry"
-        elif "delivery" in message_lower or "shipping" in message_lower:
-            return "shipping"
+        elif "delivery" in message_lower:
+            return "delivery"
         else:
             return "general"
     
     def auto_refund(self, order_number: str, reason: str, db: Session) -> Dict:
-        """Автоматичне повернення коштів (до 15% від вартості)"""
+        """Автоматичне повернення коштів"""
         order = db.query(Order).filter(Order.order_number == order_number).first()
         
         if not order:
             return {"error": "Order not found"}
         
-        max_refund_percent = 15
-        refund_amount = float(Decimal(str(order.total_amount)) * (max_refund_percent / 100))
+        # Перевіряємо чи можна повернути
+        if order.status in ["shipped", "delivered"]:
+            return {"error": "Order already shipped, cannot auto-refund"}
         
-        order.refund_amount = refund_amount
-        order.refund_reason = reason
+        refund_amount = order.total_amount
         order.status = "refunded"
         order.refunded_at = datetime.utcnow()
+        order.refund_reason = reason
         db.commit()
         
         logger.info(f"💰 Auto-refund ${refund_amount:.2f} for order {order_number}")
@@ -136,6 +142,5 @@ Respond in a helpful manner. Keep response short and clear (max 100 words)."""
             "success": True,
             "order_number": order_number,
             "refund_amount": refund_amount,
-            "refund_percent": max_refund_percent,
             "reason": reason
         }

@@ -2,120 +2,110 @@
 Medium Publisher - SEO паразит через Medium
 """
 import logging
-import requests
+import random
 from typing import Dict
 from sqlalchemy.orm import Session
-from app.core.config import settings
 from app.database.models import Product
 
 logger = logging.getLogger(__name__)
 
 
 class MediumPublisher:
-    def __init__(self):
-        self.token = settings.MEDIUM_TOKEN
-        self.has_credentials = bool(self.token)
+    """Генерація та публікація статей на Medium"""
     
-    def generate_article(self, product: Product) -> str:
-        """Генерує SEO-статтю з посиланням на продукт"""
+    def __init__(self):
+        self.templates = {
+            "top10": "Top 10 {category} Products You Need in 2026",
+            "best": "Best {category} for {problem} - Ultimate Guide",
+            "review": "{product_name} Review: Is It Worth Your Money?",
+            "comparison": "5 Best {category} Compared: Which One to Choose?",
+            "howto": "How to Choose the Best {category} - Complete Guide"
+        }
+        
+        self.problems = {
+            "electronics": ["tech enthusiasts", "gadget lovers", "remote workers"],
+            "beauty": ["skincare routine", "self-care", "beauty lovers"],
+            "home": ["home organization", "decluttering", "home improvement"],
+            "sports": ["fitness journey", "workout routine", "active lifestyle"],
+            "fashion": ["wardrobe upgrade", "style inspiration", "trendy outfits"],
+            "pet": ["pet care", "furry friends", "pet parents"],
+            "baby": ["new parents", "baby essentials", "parenthood journey"]
+        }
+    
+    def generate_article(self, product: Product) -> Dict:
+        """Генерує SEO-оптимізовану статтю"""
         
         landing_url = f"http://localhost:8000/static/landings/{product.shopify_handle}.html" if product.shopify_handle else "#"
+        category = product.category or "product"
+        problem_list = self.problems.get(category, ["shoppers", "enthusiasts"])
         
-        templates = [
-            f"""# Top 10 Trending Products You Must Know in 2026
-
-## {product.name}
-
-Looking for the best [product category]? We've found something amazing!
-
-✨ Why this product is trending:
-- High quality materials
-- Affordable price
-- Fast shipping worldwide
-
-👉 **[Get yours here]({landing_url})**
-
-Let me know in the comments if you have questions!
-
-#trending #productreview #{product.category.replace(' ', '')}""",
-            
-            f"""# The Ultimate Guide to {product.name.split()[0]} in 2026
-
-After testing dozens of products, here's what actually works:
-
-**The winner:** {product.name}
-
-What makes it special:
-✓ Durable construction
-✓ Great value for money  
-✓ Positive customer reviews
-
-**[Check current price →]({landing_url})**
-
-What's your experience with {product.name.split()[0]}? Comment below!
-
-#{product.category} #{product.name.split()[0].lower()} #amazonfinds""",
-            
-            f"""# 5 {product.category.title()} Products That Changed My Life
-
-**Number 3 will surprise you!**
-
-I've been testing {product.category} products for 3 months, and here's my honest review:
-
-**{product.name}** - ⭐⭐⭐⭐ (4.5/5)
-- Price: ${product.selling_price}
-- Quality: Excellent
-- Shipping: Fast
-
-**[Read full review →]({landing_url})**
-
-Would you try this? Let me know! #productreview #{product.category}"""
+        titles = [
+            f"Top 10 {category.title()} Products You Must Know in 2026",
+            f"Best {category.title()} for {random.choice(problem_list)} - Expert Review",
+            f"{product.name[:50]} - The Ultimate {category.title()} for 2026",
+            f"5 {category.title()} That Will Change Your Life (Number 3 is {product.name[:30]})",
+            f"Complete Guide to {category.title()} - Why {product.name[:30]} is #1"
         ]
         
-        import random
-        return random.choice(templates)
+        article = f"""# {random.choice(titles)}
+
+## Why {category.title()} Matters in 2026
+
+The {category} market has exploded with amazing options. After testing dozens of products, we've found something truly special.
+
+## Our Top Pick: {product.name}
+
+![{product.name}]({product.images[0] if product.images else ''})
+
+✨ **Key Features:**
+- Premium quality materials
+- Affordable pricing
+- Fast shipping worldwide
+
+> "{product.generated_description or 'This product exceeded all expectations. Highly recommended!'}"
+
+## Where to Buy
+
+Ready to try {product.name}? Click the link below for the best price:
+
+👉 **[Check Current Price on {category.title()} →]({landing_url})**
+
+## Final Verdict
+
+After extensive testing, {product.name} stands out as the best {category} product in its class. Highly recommended!
+
+*Have you tried this product? Share your experience in the comments!*
+
+#productreview #{category.lower()} #{product.name.lower().replace(' ', '')[:20]} #2026 #amazonfinds
+"""
+        
+        return {
+            "title": random.choice(titles),
+            "content": article,
+            "tags": [category.lower(), "review", "trending", "2026"],
+            "url": landing_url
+        }
     
     def publish(self, product: Product, db: Session) -> Dict:
-        """Публікує статтю на Medium (або генерує для ручної публікації)"""
+        """Готує статтю для публікації (симуляція)"""
         
         article = self.generate_article(product)
         
-        if not self.has_credentials:
-            logger.info("📝 [MEDIUM] Article ready (simulation)")
-            return {
-                "success": True,
-                "product_id": product.id,
-                "platform": "medium",
-                "mode": "simulation",
-                "article": article,
-                "message": "Copy this text to Medium"
-            }
+        # Зберігаємо статтю в файл для ручної публікації
+        import os
+        os.makedirs("/tmp/seo_articles", exist_ok=True)
+        filename = f"/tmp/seo_articles/medium_{product.id[:8]}.md"
+        with open(filename, "w") as f:
+            f.write(f"# {article['title']}\n\n{article['content']}")
         
-        # Реальна публікація через Medium API
-        try:
-            response = requests.post(
-                "https://api.medium.com/v1/users/me/posts",
-                headers={"Authorization": f"Bearer {self.token}"},
-                json={
-                    "title": f"Top {product.category.title()} Product for 2026",
-                    "contentFormat": "markdown",
-                    "content": article,
-                    "tags": [product.category, "trending", "review"],
-                    "publishStatus": "draft"
-                },
-                timeout=30
-            )
-            
-            if response.status_code == 201:
-                data = response.json()
-                return {
-                    "success": True,
-                    "product_id": product.id,
-                    "platform": "medium",
-                    "url": data['data']['url'],
-                    "mode": "real"
-                }
-        except Exception as e:
-            logger.error(f"Medium error: {e}")
+        logger.info(f"📝 Medium article generated: {filename}")
         
-        return {"success": False, "error": "Medium publish failed"}
+        return {
+            "success": True,
+            "product_id": product.id,
+            "platform": "medium",
+            "title": article['title'],
+            "article_preview": article['content'][:300] + "...",
+            "download_url": filename,
+            "instructions": "Copy this article to Medium.com for publishing"
+        }

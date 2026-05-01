@@ -1,7 +1,7 @@
 """
 Content Generation API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.database.models import Product
@@ -14,67 +14,44 @@ generator = ContentGenerator()
 @router.post("/content/generate/{product_id}")
 async def generate_product_content(
     product_id: str,
-    model: str = "llama3",
+    model: str = Query("llama3", description="Ollama model name"),
     db: Session = Depends(get_db)
 ):
-    """Generate AI content for a product using local Ollama"""
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    # Update generator model if specified
-    if model:
-        generator.model = model
-    
-    # Generate content
-    content = generator.generate_full_product_content(product)
-    
-    # Save to product
-    product.generated_title = content.get('generated_title')
-    product.generated_description = content.get('generated_description')
-    if content.get('tags'):
-        product.tags = content['tags']
-    db.commit()
+    generator.model = model
+    content = generator.generate_full_content(product, db)
     
     return {
         "product_id": product_id,
         "product_name": product.name,
-        "generated_title": product.generated_title,
-        "generated_description": product.generated_description,
-        "tags": product.tags,
+        "generated_title": content.get('generated_title'),
+        "generated_description": content.get('generated_description'),
         "model_used": generator.model
     }
 
 
 @router.post("/content/batch-generate")
 async def batch_generate_content(
-    limit: int = 10,
+    limit: int = 5,
     status: str = "discovered",
     model: str = "llama3",
     db: Session = Depends(get_db)
 ):
-    """Generate content for multiple products"""
-    products = db.query(Product).filter(
-        Product.status == status,
-        Product.generated_description.is_(None)
-    ).limit(limit).all()
+    products = db.query(Product).filter(Product.status == status).limit(limit).all()
     
     generator.model = model
     results = []
     
     for product in products:
-        content = generator.generate_full_product_content(product)
-        product.generated_title = content.get('generated_title')
-        product.generated_description = content.get('generated_description')
-        if content.get('tags'):
-            product.tags = content['tags']
+        content = generator.generate_full_content(product, db)
         results.append({
             "product_id": product.id,
             "product_name": product.name,
-            "title": product.generated_title[:50] if product.generated_title else None
+            "title": content.get('generated_title', '')[:50]
         })
-    
-    db.commit()
     
     return {
         "total_processed": len(results),
@@ -84,11 +61,11 @@ async def batch_generate_content(
 
 
 @router.get("/content/models")
-async def get_available_models():
-    """Get available Ollama models"""
+async def get_models():
+    """Get available models from Ollama"""
     try:
         import requests
-        response = requests.get("http://host.docker.internal:11434/api/tags", timeout=5)
+        response = requests.get("http://ollama:11434/api/tags", timeout=5)
         if response.status_code == 200:
             models = [m['name'].split(':')[0] for m in response.json().get('models', [])]
             return {"available_models": models, "current_model": generator.model}

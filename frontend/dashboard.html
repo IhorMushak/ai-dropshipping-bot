@@ -250,22 +250,23 @@
 </body>
 </html>
 
+
 <!-- SEO Publisher Section -->
 <div class="card mt-8">
     <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center">
         <h2 class="text-xl font-semibold">📝 SEO Publisher (Medium + Pinterest)</h2>
-        <button onclick="openSEOModal()" class="px-4 py-2 bg-green-600 rounded-lg hover:bg-green-500 text-sm">+ Generate SEO Content</button>
+        <button onclick="openSEOModal()" class="px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 text-sm">+ Generate SEO Content</button>
     </div>
-    <div id="seoContent" class="p-4 hidden">
+    <div id="seoResult" class="p-4 hidden">
         <div class="bg-gray-800 rounded-lg p-4 mb-4">
             <h3 class="font-semibold mb-2">📄 Medium Article</h3>
-            <pre id="mediumArticle" class="bg-gray-900 p-3 rounded text-sm overflow-x-auto whitespace-pre-wrap"></pre>
-            <button onclick="copyToClipboard(document.getElementById('mediumArticle').innerText)" class="mt-2 bg-blue-600 px-3 py-1 rounded text-sm">Copy Article</button>
+            <pre id="mediumArticle" class="bg-gray-900 p-3 rounded text-sm overflow-auto max-h-60 whitespace-pre-wrap"></pre>
+            <button onclick="copyMedium()" class="mt-2 bg-blue-600 px-3 py-1 rounded text-sm">Copy Article</button>
         </div>
         <div class="bg-gray-800 rounded-lg p-4">
             <h3 class="font-semibold mb-2">📌 Pinterest Pin</h3>
             <div id="pinContent" class="bg-gray-900 p-3 rounded text-sm"></div>
-            <button onclick="copyToClipboard(document.getElementById('pinContent').innerText)" class="mt-2 bg-red-600 px-3 py-1 rounded text-sm">Copy Pin</button>
+            <button onclick="copyPin()" class="mt-2 bg-red-600 px-3 py-1 rounded text-sm">Copy Pin</button>
         </div>
     </div>
 </div>
@@ -274,9 +275,7 @@
 <div id="seoModal" class="modal hidden" onclick="if(event.target===this) closeSEOModal()">
     <div class="modal-content p-6">
         <h3 class="text-xl font-semibold mb-4">Generate SEO Content</h3>
-        <select id="seoProductSelect" class="w-full bg-gray-700 rounded-lg px-3 py-2 mb-4 border border-gray-600">
-            <option value="">Select product...</option>
-        </select>
+        <select id="seoProductSelect" class="w-full bg-gray-700 rounded-lg px-3 py-2 mb-4 border border-gray-600"></select>
         <button onclick="generateSEO()" class="w-full bg-purple-600 py-2 rounded-lg hover:bg-purple-500">Generate Article & Pin</button>
     </div>
 </div>
@@ -286,33 +285,26 @@ async function loadSEOProducts() {
     let products = await api('/products/');
     if(!products) return;
     let select = document.getElementById('seoProductSelect');
-    select.innerHTML = '<option value="">Select product...</option>' + 
-        products.filter(p => p.status === 'published').map(p => `<option value="${p.id}">${p.name.substring(0,50)} (Score: ${p.final_score||p.trend_score||0})</option>`).join('');
+    select.innerHTML = '<option value="">Select product...</option>' + products.map(p => `<option value="${p.id}">${p.name.substring(0,50)} (Score: ${p.final_score||0})</option>`).join('');
 }
-
 async function generateSEO() {
     let id = document.getElementById('seoProductSelect').value;
     if(!id) { toast('Select product', true); return; }
-    
-    let result = await api(`/seo/article/${id}`);
-    if(result) {
-        document.getElementById('mediumArticle').innerText = result.article || 'No article generated';
-        let pinHtml = `<div class="mb-2"><strong>Title:</strong> ${result.pin?.title || 'N/A'}</div>
-                       <div class="mb-2"><strong>Description:</strong> ${result.pin?.description || 'N/A'}</div>
-                       <div class="mb-2"><strong>Image URL:</strong> ${result.pin?.image_url || 'N/A'}</div>
-                       <div><strong>Destination:</strong> ${result.pin?.destination_url || 'N/A'}</div>`;
+    let res = await api('/seo/generate/' + id);
+    if(res && res.medium_article) {
+        document.getElementById('mediumArticle').innerText = res.medium_article.content;
+        let pinHtml = '<strong>Title:</strong> ' + res.pinterest_pin.title + '<br><br>' +
+                      '<strong>Description:</strong> ' + res.pinterest_pin.description + '<br><br>' +
+                      '<strong>Image:</strong> ' + res.pinterest_pin.image_url + '<br><br>' +
+                      '<strong>Link:</strong> ' + res.pinterest_pin.destination_url;
         document.getElementById('pinContent').innerHTML = pinHtml;
-        document.getElementById('seoContent').classList.remove('hidden');
-        toast('✅ SEO content generated!');
+        document.getElementById('seoResult').classList.remove('hidden');
+        toast('✅ SEO generated!');
         closeSEOModal();
-    }
+    } else { toast('Failed', true); }
 }
-
 function openSEOModal() { loadSEOProducts(); document.getElementById('seoModal').classList.remove('hidden'); }
 function closeSEOModal() { document.getElementById('seoModal').classList.add('hidden'); }
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text);
-    toast('📋 Copied to clipboard!');
-}
+function copyMedium() { navigator.clipboard.writeText(document.getElementById('mediumArticle').innerText); toast('Article copied!'); }
+function copyPin() { navigator.clipboard.writeText(document.getElementById('pinContent').innerText); toast('Pin copied!'); }
 </script>

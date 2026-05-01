@@ -15,3 +15,5 @@ pytrends==4.9.2
 beautifulsoup4==4.12.3
 requests==2.31.0
 paypal-checkout-sdk==1.2.2
+celery==5.3.4
+redis==5.0.1

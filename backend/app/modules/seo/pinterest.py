@@ -2,61 +2,71 @@
 Pinterest Publisher - SEO паразит через Pinterest
 """
 import logging
+import random
 from typing import Dict
 from sqlalchemy.orm import Session
-from app.core.config import settings
 from app.database.models import Product
 
 logger = logging.getLogger(__name__)
 
 
 class PinterestPublisher:
+    """Генерація Pinterest пінів з посиланнями"""
+    
     def __init__(self):
-        self.token = settings.PINTEREST_TOKEN
-        self.has_credentials = bool(self.token)
+        self.title_templates = [
+            "Best {category} - You Won't Believe the Price",
+            "🔥 {product_name} - Limited Time Offer",
+            "✨ {product_name} Review - Must See!",
+            "Save 40% on {product_name} Today",
+            "Top {category} for 2026 - {product_name}"
+        ]
+        
+        self.description_templates = [
+            "Looking for the best {category}? Check out {product_name}! Great quality, fast shipping. #{category}",
+            "Save up to 40% on {product_name}. Click to see the deal! #{category} #dropshipping",
+            "Trending product alert! {product_name} is selling fast. Get yours today! #{category}",
+            "Love this {category} product! Affordable and high quality. Click the link to shop #{category} #amazonfinds"
+        ]
     
     def generate_pin(self, product: Product) -> Dict:
-        """Генерує контент для Pinterest піна"""
+        """Генерує Pinterest пін"""
         
         landing_url = f"http://localhost:8000/static/landings/{product.shopify_handle}.html" if product.shopify_handle else "#"
+        category = product.category or "product"
+        product_name_short = product.name[:40]
         
-        titles = [
-            f"Best {product.name} - Limited Time Offer",
-            f"🔥 {product.name} - You Won't Believe the Price",
-            f"✨ {product.name} Review - Must See!"
-        ]
+        title = random.choice(self.title_templates).format(
+            category=category.title(),
+            product_name=product_name_short
+        )
         
-        descriptions = [
-            f"Looking for {product.name}? Check this out! Great quality, fast shipping. #{product.category}",
-            f"Save up to 40% on {product.name}. Click to see deal! #{product.category} #dropshipping",
-            f"Trending product alert! {product.name} is selling fast. Get yours today!"
-        ]
+        description = random.choice(self.description_templates).format(
+            category=category,
+            product_name=product_name_short
+        )
         
-        import random
         image_url = product.images[0] if product.images else ""
         
         return {
-            "title": random.choice(titles),
-            "description": random.choice(descriptions),
+            "title": title,
+            "description": description,
             "image_url": image_url,
-            "destination_url": landing_url
+            "destination_url": landing_url,
+            "hashtags": [category, "trending", "deals", "shopping"]
         }
     
     def publish(self, product: Product, db: Session) -> Dict:
-        """Публікує пін на Pinterest (або генерує для ручної публікації)"""
+        """Готує пін для публікації (симуляція)"""
         
         pin = self.generate_pin(product)
         
-        if not self.has_credentials:
-            logger.info("📌 [PINTEREST] Pin ready (simulation)")
-            return {
-                "success": True,
-                "product_id": product.id,
-                "platform": "pinterest",
-                "mode": "simulation",
-                "pin": pin,
-                "message": "Copy this pin to Pinterest"
-            }
+        logger.info(f"📌 Pinterest pin generated for: {product.name}")
         
-        # Реальна публікація через Pinterest API (вимагає налаштування)
-        return {"success": False, "error": "Pinterest API needs configuration"}
+        return {
+            "success": True,
+            "product_id": product.id,
+            "platform": "pinterest",
+            "pin": pin,
+            "instructions": "Copy this pin to Pinterest.com. Use the image URL and destination link."
+        }
