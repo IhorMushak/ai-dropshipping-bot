@@ -2,23 +2,30 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Встановлення системних залежностей
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Копіювання та встановлення Python залежностей
-COPY requirements.txt .
+# Додаємо SSL сертифікат Supabase
+COPY supabase-ca.crt /usr/local/share/ca-certificates/supabase-ca.crt
+RUN chmod 644 /usr/local/share/ca-certificates/supabase-ca.crt && \
+    update-ca-certificates
+
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копіювання коду проекту
-COPY . .
+COPY backend/ .
 
-# Створення не-root користувача
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+RUN mkdir -p /app/static/landings
+
+ENV PYTHONPATH=/app
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
