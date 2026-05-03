@@ -1,5 +1,5 @@
 """
-Landing Page Generator - з PayPal Smart Buttons
+Landing Page Generator - з повною checkout формою
 """
 import logging
 import os
@@ -14,6 +14,7 @@ class LandingPageGenerator:
     def __init__(self):
         self.storage_path = "/tmp/landings"
         self.base_url = "http://localhost:8000/static/landings"
+        self.api_url = "https://ai-dropshipping-backend.onrender.com"
     
     def generate(self, product: Product, db: Session) -> Dict:
         selling_price = float(product.selling_price) if product.selling_price else 29.99
@@ -51,8 +52,8 @@ class LandingPageGenerator:
         original_price = round(selling_price * 1.5, 2)
         discount = round((1 - selling_price / original_price) * 100) if selling_price and original_price else 0
         
-        from app.core.config import settings
-        paypal_client_id = settings.PAYPAL_CLIENT_ID or "test"
+        # API ендпоінт для checkout
+        api_base = self.api_url
         
         return f'''<!DOCTYPE html>
 <html lang="en">
@@ -60,80 +61,114 @@ class LandingPageGenerator:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{product.name} | Premium Quality</title>
-    <script src="https://www.paypal.com/sdk/js?client-id={paypal_client_id}&currency=USD"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }}
-        .container {{ max-width: 1100px; margin: 0 auto; }}
-        .product-card {{ background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-wrap: wrap; }}
-        .product-image {{ flex: 1; min-width: 300px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; padding: 40px; }}
-        .product-image img {{ width: 100%; max-width: 400px; border-radius: 16px; }}
-        .product-info {{ flex: 1; padding: 48px; background: white; }}
-        .badge {{ display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 16px; border-radius: 50px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }}
-        h1 {{ font-size: 32px; font-weight: 700; color: #1f2937; margin-bottom: 16px; }}
-        .current-price {{ font-size: 42px; font-weight: 800; color: #059669; }}
-        .old-price {{ font-size: 20px; color: #9ca3af; text-decoration: line-through; margin-left: 12px; }}
-        .discount {{ display: inline-block; background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 50px; font-size: 14px; font-weight: 600; margin-left: 12px; }}
-        .description {{ color: #4b5563; line-height: 1.6; margin-bottom: 32px; }}
-        .features {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }}
-        .feature {{ display: flex; align-items: center; gap: 12px; font-size: 14px; }}
-        .paypal-container {{ margin-top: 20px; }}
-        .guarantee {{ text-align: center; margin-top: 24px; font-size: 13px; color: #9ca3af; }}
-        @media (max-width: 768px) {{ .product-info {{ padding: 32px; }} h1 {{ font-size: 24px; }} .current-price {{ font-size: 32px; }} }}
+        body {{ font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }}
+        .product-card {{ background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }}
+        .btn-primary {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: all 0.2s; }}
+        .btn-primary:hover {{ transform: translateY(-2px); filter: brightness(1.05); }}
     </style>
 </head>
-<body>
-    <div class="container">
+<body class="p-6">
+    <div class="max-w-6xl mx-auto">
         <div class="product-card">
-            <div class="product-image">
-                <img src="{image_url}" alt="{product.name}" onerror="this.src='https://placehold.co/500x500/1a1a2e/3b82f6?text=No+Image'">
-            </div>
-            <div class="product-info">
-                <div class="badge">✨ AI SELECTED • SCORE {final_score:.0f}</div>
-                <h1>{product.name}</h1>
-                <div>
-                    <span class="current-price">${selling_price:.2f}</span>
-                    <span class="old-price">${original_price:.2f}</span>
-                    <span class="discount">-{discount}% OFF</span>
+            <div class="grid md:grid-cols-2">
+                <div class="p-8 bg-gray-50">
+                    <img src="{image_url}" alt="{product.name}" class="w-full rounded-lg" onerror="this.src='https://placehold.co/500x500/1a1a2e/3b82f6?text=No+Image'">
+                    <div class="mt-6 text-center">
+                        <div class="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">✨ AI SELECTED • SCORE {final_score:.0f}</div>
+                        <div class="mt-4 text-sm text-gray-500">🚚 Free Worldwide Shipping • 30-Day Returns</div>
+                    </div>
                 </div>
-                <div class="description">{description}</div>
-                <div class="features">
-                    <div class="feature">🚚 Free Worldwide Shipping</div>
-                    <div class="feature">✅ 30-Day Money Back</div>
-                    <div class="feature">🔒 Secure Checkout</div>
-                    <div class="feature">💬 24/7 Support</div>
+                <div class="p-8">
+                    <h1 class="text-2xl font-bold text-gray-800">{product.name}</h1>
+                    <div class="mt-4">
+                        <span class="text-3xl font-bold text-green-600">${selling_price:.2f}</span>
+                        <span class="text-lg text-gray-400 line-through ml-2">${original_price:.2f}</span>
+                        <span class="ml-2 px-2 py-1 bg-red-100 text-red-600 rounded text-sm">-{discount}%</span>
+                    </div>
+                    <p class="mt-6 text-gray-600">{description}</p>
+                    
+                    <div class="mt-8 border-t pt-6">
+                        <h3 class="font-semibold mb-4">Complete Your Order</h3>
+                        <form id="checkoutForm" class="space-y-4">
+                            <input type="hidden" id="productId" value="{product.id}">
+                            <div><input type="text" id="name" placeholder="Full Name *" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                            <div><input type="email" id="email" placeholder="Email *" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                            <div><input type="text" id="address" placeholder="Address Line 1 *" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <input type="text" id="city" placeholder="City *" required class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <input type="text" id="zip" placeholder="ZIP *" required class="px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <input type="text" id="state" placeholder="State" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <select id="country" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="US">United States</option>
+                                    <option value="GB">United Kingdom</option>
+                                    <option value="DE">Germany</option>
+                                    <option value="FR">France</option>
+                                    <option value="CA">Canada</option>
+                                    <option value="AU">Australia</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary w-full text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2">
+                                Continue to PayPal <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.882a.766.766 0 0 1 .757-.634h9.266c2.316 0 3.968.636 4.944 1.91.978 1.274 1.121 3.046.433 5.321-.694 2.302-1.342 4.084-1.945 5.347-.6 1.258-1.325 2.288-2.173 3.09-.848.802-1.793 1.376-2.835 1.722-.97.322-1.97.484-2.997.484h-3.47l-.788 4.774a.761.761 0 0 1-.755.674z"/></svg>
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <div class="paypal-container">
-                    <div id="paypal-button-container"></div>
-                </div>
-                <div class="guarantee">🔥 Limited stock • Order now!</div>
             </div>
         </div>
     </div>
-    
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-700">Processing your order...</p>
+        </div>
+    </div>
     <script>
-        paypal.Buttons({{
-            createOrder: function(data, actions) {{
-                return actions.order.create({{
-                    purchase_units: [{{
-                        description: "{product.name[:50]}",
-                        amount: {{
-                            value: "{selling_price:.2f}"
-                        }}
-                    }}]
-                }});
-            }},
-            onApprove: function(data, actions) {{
-                return actions.order.capture().then(function(details) {{
-                    alert('Transaction completed by ' + details.payer.name.given_name);
-                    window.location.href = '/success.html';
-                }});
-            }},
-            onError: function(err) {{
-                console.error('PayPal Error:', err);
-                alert('Payment error. Please try again.');
+        const API_URL = '{api_base}/api/v1';
+        
+        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {{
+            e.preventDefault();
+            const data = {{
+                product_id: document.getElementById('productId').value,
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                address_line1: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                zip: document.getElementById('zip').value,
+                state: document.getElementById('state').value,
+                country: document.getElementById('country').value
+            }};
+            
+            if (!data.name || !data.email || !data.address_line1 || !data.city || !data.zip) {{
+                alert('Please fill all required fields');
+                return;
             }}
-        }}).render('#paypal-button-container');
+            
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            
+            try {{
+                const res = await fetch(`${{API_URL}}/checkout/create`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify(data)
+                }});
+                const result = await res.json();
+                if (result.success && result.paypal_url) {{
+                    window.location.href = result.paypal_url;
+                }} else {{
+                    alert('Failed to create order. Please try again.');
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                }}
+            }} catch(e) {{
+                console.error(e);
+                alert('Network error. Please try again.');
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }}
+        }});
     </script>
 </body>
 </html>'''
