@@ -32,3 +32,5 @@ from app.api.v1.endpoints import seo
 api_router.include_router(seo.router, prefix="", tags=["seo"])
 from app.api.v1.endpoints import products
 # Вже є products, тому просто переконуємось що ендпоінт доданий
+from app.api.v1.endpoints import checkout
+api_router.include_router(checkout.router, prefix="", tags=["checkout"])

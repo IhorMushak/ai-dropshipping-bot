@@ -52,6 +52,7 @@ async def create_checkout(
     order = Order(
         id=str(uuid.uuid4()),
         order_number=order_number,
+        marketplace="checkout",
         product_id=product.id,
         customer_name=data.name,
         customer_email=data.email,
@@ -65,6 +66,13 @@ async def create_checkout(
         shipping_state=data.state,
         shipping_zip=data.zip,
         shipping_country=data.country,
+        items=[{
+            "product_id": product.id,
+            "name": product.name,
+            "quantity": 1,
+            "price": float(product.selling_price or 29.99)
+        }],
+        subtotal=float(product.selling_price or 29.99),
         total_amount=float(product.selling_price or 29.99),
         status="checkout_created",
         checkout_status="address_collected",

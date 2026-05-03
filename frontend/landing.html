@@ -3,121 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Landing Page Publisher</title>
+    <title>Checkout - AI Dropshipping Bot</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background: #0f0f0f; font-family: 'Inter', sans-serif; }
-        .card { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
-        .btn { transition: all 0.2s ease; cursor: pointer; }
-        .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-        .badge-green { background: rgba(34,197,94,0.2); color: #4ade80; }
-        .badge-blue { background: rgba(59,130,246,0.2); color: #60a5fa; }
-        .badge-purple { background: rgba(168,85,247,0.2); color: #a855f7; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
     </style>
 </head>
-<body class="text-white p-6">
-    <div class="max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">📄 Landing Page Publisher</h1>
-                <p class="text-gray-400 text-sm">Generate and manage product landing pages</p>
-            </div>
-            <a href="dashboard.html" class="btn bg-gray-800 hover:bg-gray-700 px-5 py-2 rounded-xl text-sm">← Back to Dashboard</a>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-            <div class="card p-5"><div class="text-gray-400 text-sm">Total Products</div><div class="text-3xl font-bold mt-1" id="totalProducts">0</div></div>
-            <div class="card p-5"><div class="text-gray-400 text-sm">Published</div><div class="text-3xl font-bold text-green-400 mt-1" id="publishedCount">0</div></div>
-            <div class="card p-5"><div class="text-gray-400 text-sm">Landing Pages</div><div class="text-3xl font-bold text-purple-400 mt-1" id="landingCount">0</div></div>
-        </div>
-
-        <div class="card mb-8">
-            <div class="p-5 border-b border-white/5">
-                <h2 class="text-xl font-semibold mb-4">Generate New Landing Page</h2>
-                <div class="flex gap-4 flex-wrap">
-                    <select id="productSelect" class="flex-1 bg-gray-800 rounded-lg px-4 py-2 border border-gray-700 min-w-[200px]">
-                        <option value="">Select product...</option>
-                    </select>
-                    <button onclick="generateLanding()" class="btn bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg">🚀 Generate Landing Page</button>
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="grid md:grid-cols-2">
+                <div class="bg-gray-50 p-8" id="productInfo">
+                    <div class="text-center">
+                        <img id="productImage" src="" class="w-full max-w-xs mx-auto rounded-lg mb-4">
+                        <h2 id="productName" class="text-2xl font-bold text-gray-800">Loading...</h2>
+                        <div class="text-3xl font-bold text-green-600 mt-2" id="productPrice"></div>
+                        <div class="mt-4 text-sm text-gray-500">✨ Free Shipping • 30-Day Returns</div>
+                    </div>
                 </div>
-                <div id="generationResult" class="mt-4 hidden"></div>
+                <div class="p-8">
+                    <h1 class="text-2xl font-bold mb-6">Complete Your Order</h1>
+                    <form id="checkoutForm" class="space-y-4">
+                        <input type="hidden" id="productId">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label><input type="text" id="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Email *</label><input type="email" id="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Phone</label><input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Address Line 1 *</label><input type="text" id="addressLine1" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label><input type="text" id="addressLine2" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                        <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-700 mb-1">City *</label><input type="text" id="city" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div><div><label class="block text-sm font-medium text-gray-700 mb-1">ZIP *</label><input type="text" id="zip" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div></div>
+                        <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-700 mb-1">State</label><input type="text" id="state" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div><div><label class="block text-sm font-medium text-gray-700 mb-1">Country *</label><select id="country" class="w-full px-4 py-2 border border-gray-300 rounded-lg"><option value="US">United States</option><option value="GB">United Kingdom</option><option value="DE">Germany</option><option value="FR">France</option><option value="CA">Canada</option><option value="AU">Australia</option></select></div></div>
+                        <div class="border-t pt-4 mt-4"><div class="flex justify-between text-sm mb-2"><span>Subtotal</span><span id="subtotal"></span></div><div class="flex justify-between text-sm mb-2"><span>Shipping</span><span class="text-green-600">FREE</span></div><div class="flex justify-between font-bold text-lg mt-2 pt-2 border-t"><span>Total</span><span id="total"></span></div></div>
+                        <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"><span>Continue to PayPal</span><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.882a.766.766 0 0 1 .757-.634h9.266c2.316 0 3.968.636 4.944 1.91.978 1.274 1.121 3.046.433 5.321-.694 2.302-1.342 4.084-1.945 5.347-.6 1.258-1.325 2.288-2.173 3.09-.848.802-1.793 1.376-2.835 1.722-.97.322-1.97.484-2.997.484h-3.47l-.788 4.774a.761.761 0 0 1-.755.674z"/></svg></button>
+                    </form>
+                    <div class="mt-6 text-center text-xs text-gray-500"><p>🔒 Secure payment via PayPal • Your data is protected</p><p class="mt-1">📦 Estimated delivery: 7-12 business days</p></div>
+                </div>
             </div>
-        </div>
-
-        <div class="card">
-            <div class="p-5 border-b border-white/5">
-                <h2 class="text-xl font-semibold">🌐 Published Landing Pages</h2>
-            </div>
-            <div id="landingUrls" class="divide-y divide-gray-800"></div>
         </div>
     </div>
-
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-5 py-3 rounded-xl shadow-xl hidden"></div>
-
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div class="bg-white rounded-lg p-6 text-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div><p class="mt-4 text-gray-700">Processing your order...</p></div></div>
     <script>
-        const API = 'http://localhost:8000/api/v1';
-        
-        function toast(msg, err=false){ let t=document.getElementById('toast'); t.textContent=msg; t.className=`fixed bottom-5 right-5 px-5 py-3 rounded-xl shadow-xl ${err?'bg-red-600':'bg-green-600'}`; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000); }
-        
-        async function api(endpoint, opts={}){ try{ let res=await fetch(`${API}${endpoint}`,{method:opts.method||'GET'}); if(!res.ok)throw new Error(); return await res.json(); }catch(e){ return null; }}
-        
-        function copyToClipboard(text){ navigator.clipboard.writeText(text); toast('📋 URL copied!'); }
-        
-        async function generateLanding(){
-            let id = document.getElementById('productSelect').value;
-            if(!id){ toast('Select product', true); return; }
-            
-            let result = await api(`/landing/generate/${id}`, {method:'POST'});
-            if(result?.success){
-                let url = result.page_url;
-                document.getElementById('generationResult').innerHTML = `
-                    <div class="bg-green-600/20 border border-green-600 rounded-lg p-3 flex justify-between items-center">
-                        <span>✅ Generated: <a href="${url}" target="_blank" class="text-blue-400 underline">${url}</a></span>
-                        <button onclick="copyToClipboard('${url}')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">Copy URL</button>
-                    </div>`;
-                document.getElementById('generationResult').classList.remove('hidden');
-                toast('✅ Landing page generated!');
-                loadData();
-            } else {
-                toast('Failed to generate', true);
-            }
+        const API_URL = 'https://ai-dropshipping-backend.onrender.com/api/v1';
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('product_id');
+        if (!productId) { alert('Product ID not found. Please go back.'); }
+        async function loadProduct() {
+            try {
+                const response = await fetch(`${API_URL}/products/${productId}`);
+                const product = await response.json();
+                document.getElementById('productId').value = product.id;
+                document.getElementById('productName').innerText = product.name;
+                const price = product.selling_price || 29.99;
+                document.getElementById('productPrice').innerText = `$${price}`;
+                document.getElementById('subtotal').innerText = `$${price}`;
+                document.getElementById('total').innerText = `$${price}`;
+                if (product.images && product.images[0]) { document.getElementById('productImage').src = product.images[0]; }
+            } catch(e) { console.error(e); }
         }
-        
-        async function loadData(){
-            let products = await api('/products/');
-            if(!products) return;
-            
-            document.getElementById('totalProducts').innerText = products.length;
-            document.getElementById('publishedCount').innerText = products.filter(p => p.status === 'published' || p.status === 'active').length;
-            document.getElementById('landingCount').innerText = products.filter(p => p.shopify_handle).length;
-            
-            let unpublished = products.filter(p => !p.shopify_handle);
-            let select = document.getElementById('productSelect');
-            select.innerHTML = '<option value="">Select product...</option>' + 
-                unpublished.map(p => `<option value="${p.id}">${p.name.substring(0,60)} (Score: ${p.final_score||p.trend_score||0})</option>`).join('');
-            
-            let urlsHtml = '';
-            for(let p of products.filter(p => p.shopify_handle).slice(0,20)){
-                let url = `http://localhost:8000/static/landings/${p.shopify_handle}.html`;
-                urlsHtml += `
-                    <div class="p-4 flex justify-between items-center hover:bg-gray-800">
-                        <div>
-                            <div class="text-sm font-medium">${p.name.substring(0,50)}</div>
-                            <div class="text-xs text-gray-400">${p.shopify_handle}</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <a href="${url}" target="_blank" class="text-blue-400 text-sm hover:underline">🔗 Open</a>
-                            <button onclick="copyToClipboard('${url}')" class="text-gray-400 text-sm hover:text-white">📋 Copy</button>
-                        </div>
-                    </div>
-                `;
+        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const checkoutData = {
+                product_id: document.getElementById('productId').value,
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address_line1: document.getElementById('addressLine1').value,
+                address_line2: document.getElementById('addressLine2').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                zip: document.getElementById('zip').value,
+                country: document.getElementById('country').value
+            };
+            if (!checkoutData.name || !checkoutData.email || !checkoutData.address_line1 || !checkoutData.city || !checkoutData.zip) {
+                alert('Please fill in all required fields'); return;
             }
-            document.getElementById('landingUrls').innerHTML = urlsHtml || '<div class="p-5 text-center text-gray-400">No landing pages yet</div>';
-        }
-        
-        loadData();
-        setInterval(loadData, 30000);
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            try {
+                const response = await fetch(`${API_URL}/checkout/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(checkoutData) });
+                const result = await response.json();
+                if (result.success && result.paypal_url) { window.location.href = result.paypal_url; }
+                else { alert('Failed to create order. Please try again.'); document.getElementById('loadingOverlay').classList.add('hidden'); }
+            } catch(e) { console.error(e); alert('Network error. Please try again.'); document.getElementById('loadingOverlay').classList.add('hidden'); }
+        });
+        loadProduct();
     </script>
 </body>
 </html>

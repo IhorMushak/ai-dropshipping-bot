@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - AI Dropshipping Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-green-50 flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
+        <p class="text-gray-600 mb-6">Thank you for your purchase. You will receive a confirmation email shortly.</p>
+        <div class="bg-gray-50 rounded-lg p-4 mb-6" id="orderInfo">
+            <p class="text-sm text-gray-500">Order Number</p>
+            <p class="font-mono text-gray-800" id="orderNumber">-</p>
+        </div>
+        <a href="https://ihormushak.github.io/ai-dropshipping-bot/dashboard.html" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition">
+            Go to Dashboard
+        </a>
+    </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        if (token) {
+            fetch(`https://ai-dropshipping-backend.onrender.com/api/v1/payment/success?token=${token}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.order_number) {
+                        document.getElementById('orderNumber').textContent = data.order_number;
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+    </script>
+</body>
+</html>
