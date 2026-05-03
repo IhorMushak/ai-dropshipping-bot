@@ -15,7 +15,7 @@ class Order(Base, UUIDMixin, TimestampMixin):
     # Identification
     order_number = Column(String(100), unique=True, nullable=False)
     marketplace_order_id = Column(String(200))
-    marketplace = Column(String(50), nullable=False)  # shopify, amazon, etc.
+    marketplace = Column(String(50), nullable=False)
 
     # Links
     product_id = Column(String(36), ForeignKey("products.id", ondelete="SET NULL"))
@@ -28,8 +28,20 @@ class Order(Base, UUIDMixin, TimestampMixin):
     shipping_address = Column(JSONB)
     billing_address = Column(JSONB)
 
+    # NEW: Shipping fields for checkout
+    shipping_name = Column(String(200))
+    shipping_email = Column(String(200))
+    shipping_phone = Column(String(50))
+    shipping_address_line1 = Column(String(500))
+    shipping_address_line2 = Column(String(500))
+    shipping_city = Column(String(100))
+    shipping_state = Column(String(100))
+    shipping_zip = Column(String(20))
+    shipping_country = Column(String(100))
+    checkout_status = Column(String(50), default="cart")  # cart, address_collected, payment_pending, completed
+
     # Order items
-    items = Column(JSONB)  # List of items in order
+    items = Column(JSONB)
 
     # Financials
     subtotal = Column(Numeric(10, 2), nullable=False)
@@ -56,6 +68,12 @@ class Order(Base, UUIDMixin, TimestampMixin):
     estimated_delivery_date = Column(DateTime)
     actual_delivery_date = Column(DateTime)
 
+    # PayPal
+    paypal_order_id = Column(String(200))
+    paypal_capture_id = Column(String(200))
+    paid_amount = Column(Numeric(10, 2))
+    paid_at = Column(DateTime)
+
     # Status
     status = Column(
         String(50),
@@ -64,7 +82,7 @@ class Order(Base, UUIDMixin, TimestampMixin):
         server_default="pending"
     )
     # Statuses: pending, confirmed, processing, shipped, delivered,
-    #           cancelled, refunded, failed, disputed
+    #           cancelled, refunded, failed, disputed, checkout_created
 
     payment_status = Column(String(50), default="pending")
     fulfillment_status = Column(String(50), default="unfulfilled")
@@ -73,6 +91,10 @@ class Order(Base, UUIDMixin, TimestampMixin):
     refund_amount = Column(Numeric(10, 2), default=0)
     refund_reason = Column(Text)
     refunded_at = Column(DateTime)
+
+    # Retry
+    retry_count = Column(Integer, default=0)
+    next_retry_at = Column(DateTime)
 
     # Timeline
     order_placed_at = Column(DateTime, nullable=False)
@@ -85,7 +107,7 @@ class Order(Base, UUIDMixin, TimestampMixin):
     # Notes
     notes = Column(Text)
 
-    # Extra data (renamed from 'metadata' to avoid conflict)
+    # Extra data
     extra_data = Column(JSONB, default={})
 
     # Relationships
@@ -102,12 +124,8 @@ class Order(Base, UUIDMixin, TimestampMixin):
         Index("idx_orders_placed_at", "order_placed_at"),
         Index("idx_orders_supplier", "supplier_id"),
         Index("idx_orders_tracking", "tracking_number"),
+        Index("idx_orders_checkout_status", "checkout_status"),
     )
 
     def __repr__(self):
         return f"<Order(id={self.id}, order_number={self.order_number}, status={self.status})>"
-
-    # Refund fields
-    refund_amount = Column(Numeric(10, 2), default=0)
-    refund_reason = Column(Text)
-    refunded_at = Column(DateTime)
